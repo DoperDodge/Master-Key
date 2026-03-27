@@ -7,6 +7,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import PostDetail from './pages/PostDetail';
+import AdminPanel from './pages/AdminPanel';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -35,6 +36,7 @@ function App() {
           <Route path="/register" element={<Register setUser={setUser} />} />
           <Route path="/dashboard" element={<Dashboard user={user} />} />
           <Route path="/post/:id" element={<PostDetail user={user} />} />
+          <Route path="/admin" element={<AdminPanel user={user} />} />
         </Routes>
       </main>
     </BrowserRouter>
