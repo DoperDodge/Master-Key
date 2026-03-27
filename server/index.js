@@ -53,6 +53,8 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/posts', require('./routes/posts'));
 app.use('/api/comments', require('./routes/comments'));
 app.use('/api/admin', require('./routes/admin'));
+app.use('/api/messages', require('./routes/messages'));
+app.use('/api/reports', require('./routes/reports'));
 
 // Serve React frontend
 app.use(express.static(path.join(__dirname, '../client/dist')));

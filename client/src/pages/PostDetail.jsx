@@ -7,6 +7,8 @@ function PostDetail({ user }) {
   const [post, setPost] = useState(null);
   const [currentImage, setCurrentImage] = useState(0);
   const [error, setError] = useState('');
+  const [showReport, setShowReport] = useState(false);
+  const [reportReason, setReportReason] = useState('');
 
   useEffect(() => {
     fetch(`/api/posts/${id}`)
@@ -158,7 +160,41 @@ function PostDetail({ user }) {
         {post.description && (
           <p style={{ color: 'var(--text-secondary)', lineHeight: 1.7 }}>{post.description}</p>
         )}
+        {user && user.id !== post.user_id && (
+          <button className="btn btn-ghost" style={{ marginTop: '1rem', fontSize: '0.8rem', color: 'var(--danger)' }}
+            onClick={() => setShowReport(true)}>Report Post</button>
+        )}
       </div>
+
+      {showReport && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex',
+          alignItems: 'center', justifyContent: 'center', zIndex: 200,
+        }} onClick={() => { setShowReport(false); setReportReason(''); }}>
+          <div className="card" style={{ padding: '1.5rem', width: '400px', maxWidth: '90vw' }}
+            onClick={e => e.stopPropagation()}>
+            <h3 style={{ margin: '0 0 1rem', fontSize: '1.1rem', fontWeight: 600 }}>Report Post</h3>
+            <div className="form-group">
+              <label className="label">Reason</label>
+              <textarea className="textarea" value={reportReason} onChange={e => setReportReason(e.target.value)}
+                placeholder="Describe why you're reporting this post..." rows={3} />
+            </div>
+            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+              <button className="btn btn-ghost" onClick={() => { setShowReport(false); setReportReason(''); }}>Cancel</button>
+              <button className="btn btn-danger" disabled={!reportReason.trim()} onClick={async () => {
+                await fetch('/api/reports', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ report_type: 'post', target_id: parseInt(id), reason: reportReason })
+                });
+                setShowReport(false);
+                setReportReason('');
+                alert('Report submitted.');
+              }}>Submit Report</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <CommentSection postId={id} user={user} />
     </div>
