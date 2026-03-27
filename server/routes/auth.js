@@ -1,0 +1,53 @@
+const router = require('express').Router();
+const bcrypt = require('bcrypt');
+const db = require('../db');
+
+// Register
+router.post('/register', async (req, res) => {
+  const { username, password } = req.body;
+  if (!username || !password) return res.status(400).json({ error: 'Username and password required' });
+  if (username.length > 30) return res.status(400).json({ error: 'Username too long' });
+  if (password.length < 6) return res.status(400).json({ error: 'Password must be at least 6 characters' });
+
+  const hash = await bcrypt.hash(password, 10);
+  try {
+    const result = await db.query(
+      'INSERT INTO users (username, password_hash) VALUES ($1, $2) RETURNING id, username',
+      [username, hash]
+    );
+    req.session.userId = result.rows[0].id;
+    req.session.username = result.rows[0].username;
+    res.json({ user: result.rows[0] });
+  } catch (err) {
+    if (err.code === '23505') return res.status(409).json({ error: 'Username already taken' });
+    throw err;
+  }
+});
+
+// Login
+router.post('/login', async (req, res) => {
+  const { username, password } = req.body;
+  const result = await db.query('SELECT * FROM users WHERE username = $1', [username]);
+  if (!result.rows.length) return res.status(401).json({ error: 'Invalid credentials' });
+
+  const valid = await bcrypt.compare(password, result.rows[0].password_hash);
+  if (!valid) return res.status(401).json({ error: 'Invalid credentials' });
+
+  req.session.userId = result.rows[0].id;
+  req.session.username = result.rows[0].username;
+  res.json({ user: { id: result.rows[0].id, username: result.rows[0].username } });
+});
+
+// Logout
+router.post('/logout', (req, res) => {
+  req.session.destroy();
+  res.json({ ok: true });
+});
+
+// Check session
+router.get('/me', (req, res) => {
+  if (!req.session.userId) return res.json({ user: null });
+  res.json({ user: { id: req.session.userId, username: req.session.username } });
+});
+
+module.exports = router;
