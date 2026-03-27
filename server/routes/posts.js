@@ -6,33 +6,43 @@ const requireAuth = require('../middleware/requireAuth');
 
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB per file
+  limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     if (file.mimetype.startsWith('image/')) cb(null, true);
     else cb(new Error('Only images allowed'));
   }
 });
 
-const VALID_CLASSES = ['Bible', 'Spanish', 'English', 'Geometry', 'Chemistry', 'Algebra 2', 'Algebra 1'];
-const VALID_GRADES = ['10th'];
+const GRADE_CLASSES = {
+  '9th': ['Algebra'],
+  '10th': ['Bible', 'Spanish', 'English', 'Geometry', 'Chemistry', 'Algebra 2', 'Algebra 1'],
+  '11th': ['Algebra 2'],
+  '12th': [],
+};
+
+const VALID_GRADES = Object.keys(GRADE_CLASSES);
+const ALL_CLASSES = [...new Set(Object.values(GRADE_CLASSES).flat())];
 const VALID_VISIBILITY = ['public', 'invisible', 'unlisted'];
+const VALID_KEY_TYPES = ['Homework', 'Classwork', 'Notes', 'Quiz', 'Test', 'Miscellaneous', 'Lab'];
 
 // Create post with images
 router.post('/', requireAuth, upload.array('images', 20), async (req, res) => {
-  const { title, description, grade, class: className, visibility } = req.body;
+  const { title, description, grade, class: className, visibility, key_type } = req.body;
 
   if (!title || !grade || !className) return res.status(400).json({ error: 'Title, grade, and class required' });
   if (!VALID_GRADES.includes(grade)) return res.status(400).json({ error: 'Invalid grade' });
-  if (!VALID_CLASSES.includes(className)) return res.status(400).json({ error: 'Invalid class' });
+  const gradeClasses = GRADE_CLASSES[grade] || [];
+  if (!gradeClasses.includes(className)) return res.status(400).json({ error: 'Invalid class for this grade' });
   if (!req.files || req.files.length === 0) return res.status(400).json({ error: 'At least one image required' });
+  if (key_type && !VALID_KEY_TYPES.includes(key_type)) return res.status(400).json({ error: 'Invalid answer key type' });
+  if (key_type === 'Lab' && className !== 'Chemistry') return res.status(400).json({ error: 'Lab type is only for Chemistry' });
 
   const postResult = await db.query(
-    'INSERT INTO posts (user_id, title, description, grade, class, visibility) VALUES ($1,$2,$3,$4,$5,$6) RETURNING *',
-    [req.session.userId, title, description || '', grade, className, visibility || 'public']
+    'INSERT INTO posts (user_id, title, description, grade, class, visibility, key_type) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *',
+    [req.session.userId, title, description || '', grade, className, visibility || 'public', key_type || null]
   );
   const post = postResult.rows[0];
 
-  // Upload each image to R2
   const imageRecords = [];
   for (let i = 0; i < req.files.length; i++) {
     const file = req.files[i];
@@ -49,7 +59,7 @@ router.post('/', requireAuth, upload.array('images', 20), async (req, res) => {
 
 // List posts (with filters)
 router.get('/', async (req, res) => {
-  const { grade, class: className } = req.query;
+  const { grade, class: className, key_type } = req.query;
   let query = `
     SELECT p.*, u.username,
       json_agg(json_build_object('id', i.id, 'url', i.url, 'position', i.position) ORDER BY i.position) AS images
@@ -67,6 +77,10 @@ router.get('/', async (req, res) => {
   if (className) {
     params.push(className);
     query += ` AND p.class = $${params.length}`;
+  }
+  if (key_type) {
+    params.push(key_type);
+    query += ` AND p.key_type = $${params.length}`;
   }
 
   query += ' GROUP BY p.id, u.username ORDER BY p.created_at DESC';
