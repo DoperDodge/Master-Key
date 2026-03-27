@@ -84,6 +84,7 @@ function Navbar({ user, setUser }) {
             <>
               <Link to="/upload" style={linkStyle} onClick={() => setMenuOpen(false)}>Upload</Link>
               <Link to="/dashboard" style={linkStyle} onClick={() => setMenuOpen(false)}>Dashboard</Link>
+              {user.is_admin && <Link to="/admin" style={{ ...linkStyle, color: 'var(--accent)' }} onClick={() => setMenuOpen(false)}>Admin</Link>}
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
