@@ -18,6 +18,9 @@ function Messages({ user }) {
   const [showClosed, setShowClosed] = useState(false);
   const [reportTarget, setReportTarget] = useState(null);
   const [reportReason, setReportReason] = useState('');
+  const [showSharePost, setShowSharePost] = useState(false);
+  const [postSearchQuery, setPostSearchQuery] = useState('');
+  const [postSearchResults, setPostSearchResults] = useState([]);
   const messagesEndRef = useRef(null);
   const pollRef = useRef(null);
 
@@ -162,6 +165,35 @@ function Messages({ user }) {
     alert('Report submitted.');
   };
 
+  const searchPosts = async (q) => {
+    setPostSearchQuery(q);
+    if (q.length < 1) { setPostSearchResults([]); return; }
+    const res = await fetch(`/api/messages/posts/search?q=${encodeURIComponent(q)}`);
+    if (res.ok) setPostSearchResults(await res.json());
+  };
+
+  const sharePost = async (post) => {
+    const body = `[post:${post.id}] ${post.title}`;
+    const res = await fetch(`/api/messages/conversations/${activeConv}/messages`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ body })
+    });
+    if (res.ok) {
+      const msg = await res.json();
+      setMessages([...messages, msg]);
+      setShowSharePost(false);
+      setPostSearchQuery('');
+      setPostSearchResults([]);
+    }
+  };
+
+  const parsePostShare = (body) => {
+    const match = body.match(/^\[post:(\d+)\] (.+)$/);
+    if (match) return { id: parseInt(match[1]), title: match[2] };
+    return null;
+  };
+
   const getConvName = (conv) => {
     if (conv.name) return conv.name;
     if (conv.members) {
@@ -299,6 +331,7 @@ function Messages({ user }) {
             <div style={{ flex: 1, overflowY: 'auto', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               {messages.map(msg => {
                 const isMe = msg.user_id === user.id;
+                const sharedPost = parsePostShare(msg.body);
                 return (
                   <div key={msg.id} style={{
                     display: 'flex', flexDirection: 'column',
@@ -310,16 +343,32 @@ function Messages({ user }) {
                         {msg.username}
                       </span>
                     )}
-                    <div style={{
-                      padding: '0.6rem 0.9rem',
-                      background: isMe ? 'var(--accent)' : 'var(--bg-card)',
-                      color: isMe ? '#fff' : 'var(--text-primary)',
-                      borderRadius: isMe ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
-                      fontSize: '0.9rem', lineHeight: 1.4, wordBreak: 'break-word',
-                    }}>
-                      {msg.body}
-                      {msg.edited && <span style={{ fontSize: '0.65rem', opacity: 0.6, marginLeft: '0.4rem' }}>(edited)</span>}
-                    </div>
+                    {sharedPost ? (
+                      <a href={`/post/${sharedPost.id}`} style={{
+                        display: 'block', textDecoration: 'none',
+                        background: 'var(--bg-card)', border: '1px solid var(--border)',
+                        borderRadius: '12px', padding: '0.6rem 0.9rem', maxWidth: '260px',
+                        transition: 'border-color var(--transition)',
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.3rem' }}>
+                          <span style={{ fontSize: '0.7rem', color: 'var(--accent)' }}>📎 Shared Post</span>
+                        </div>
+                        <p style={{ margin: 0, fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-primary)' }}>
+                          {sharedPost.title}
+                        </p>
+                      </a>
+                    ) : (
+                      <div style={{
+                        padding: '0.6rem 0.9rem',
+                        background: isMe ? 'var(--accent)' : 'var(--bg-card)',
+                        color: isMe ? '#fff' : 'var(--text-primary)',
+                        borderRadius: isMe ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
+                        fontSize: '0.9rem', lineHeight: 1.4, wordBreak: 'break-word',
+                      }}>
+                        {msg.body}
+                        {msg.edited && <span style={{ fontSize: '0.65rem', opacity: 0.6, marginLeft: '0.4rem' }}>(edited)</span>}
+                      </div>
+                    )}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.1rem' }}>
                       <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
                         {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -341,6 +390,8 @@ function Messages({ user }) {
               padding: '0.75rem 1rem', borderTop: '1px solid var(--border)',
               display: 'flex', gap: '0.5rem',
             }}>
+              <button type="button" className="btn btn-ghost" style={{ padding: '0.4rem 0.6rem', fontSize: '0.85rem', flexShrink: 0 }}
+                onClick={() => setShowSharePost(true)} title="Share a post">📎</button>
               <input className="input" value={msgBody} onChange={e => setMsgBody(e.target.value)}
                 placeholder="Type a message..." style={{ flex: 1 }} />
               <button type="submit" className="btn btn-primary">Send</button>
@@ -443,6 +494,54 @@ function Messages({ user }) {
             <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
               <button className="btn btn-ghost" onClick={() => { setReportTarget(null); setReportReason(''); }}>Cancel</button>
               <button className="btn btn-danger" onClick={submitReport} disabled={!reportReason.trim()}>Submit Report</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Share Post Modal */}
+      {showSharePost && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex',
+          alignItems: 'center', justifyContent: 'center', zIndex: 200,
+        }} onClick={() => { setShowSharePost(false); setPostSearchQuery(''); setPostSearchResults([]); }}>
+          <div className="card" style={{ padding: '1.5rem', width: '440px', maxWidth: '90vw', maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}
+            onClick={e => e.stopPropagation()}>
+            <h3 style={{ margin: '0 0 1rem', fontSize: '1.1rem', fontWeight: 600 }}>Share a Post</h3>
+            <div className="form-group">
+              <input className="input" value={postSearchQuery} onChange={e => searchPosts(e.target.value)}
+                placeholder="Search posts by title..." autoFocus />
+            </div>
+            <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              {postSearchResults.map(p => (
+                <div key={p.id} onClick={() => sharePost(p)} style={{
+                  display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.6rem 0.75rem',
+                  background: 'var(--bg-hover)', borderRadius: 'var(--radius-sm)', cursor: 'pointer',
+                  border: '1px solid var(--border)', transition: 'border-color var(--transition)',
+                }}>
+                  {p.thumbnail ? (
+                    <img src={p.thumbnail} alt="" style={{ width: '48px', height: '36px', objectFit: 'cover', borderRadius: '4px', flexShrink: 0 }} />
+                  ) : (
+                    <div style={{ width: '48px', height: '36px', background: 'var(--bg-input)', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '1rem', flexShrink: 0 }}>📷</div>
+                  )}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ margin: 0, fontWeight: 600, fontSize: '0.85rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.title}</p>
+                    <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.75rem' }}>
+                      {p.grade} - {p.class}{p.key_type ? ` - ${p.key_type}` : ''} | by {p.username}
+                      {p.visibility === 'unlisted' && <span style={{ color: 'var(--accent)', marginLeft: '0.3rem' }}>(unlisted)</span>}
+                    </p>
+                  </div>
+                </div>
+              ))}
+              {postSearchQuery && postSearchResults.length === 0 && (
+                <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '1rem 0', fontSize: '0.85rem' }}>No posts found.</p>
+              )}
+              {!postSearchQuery && (
+                <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '1rem 0', fontSize: '0.85rem' }}>Search for a post to share.</p>
+              )}
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
+              <button className="btn btn-ghost" onClick={() => { setShowSharePost(false); setPostSearchQuery(''); setPostSearchResults([]); }}>Cancel</button>
             </div>
           </div>
         </div>
