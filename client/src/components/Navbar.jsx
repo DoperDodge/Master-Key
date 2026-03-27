@@ -1,9 +1,24 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 function Navbar({ user, setUser }) {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [reportCount, setReportCount] = useState(0);
+
+  useEffect(() => {
+    if (user && user.is_admin) {
+      const fetchCount = () => {
+        fetch('/api/admin/reports/count')
+          .then(r => r.json())
+          .then(data => setReportCount(data.count || 0))
+          .catch(() => {});
+      };
+      fetchCount();
+      const interval = setInterval(fetchCount, 15000);
+      return () => clearInterval(interval);
+    }
+  }, [user]);
 
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
@@ -84,7 +99,19 @@ function Navbar({ user, setUser }) {
             <>
               <Link to="/upload" style={linkStyle} onClick={() => setMenuOpen(false)}>Upload</Link>
               <Link to="/dashboard" style={linkStyle} onClick={() => setMenuOpen(false)}>Dashboard</Link>
-              {user.is_admin && <Link to="/admin" style={{ ...linkStyle, color: 'var(--accent)' }} onClick={() => setMenuOpen(false)}>Admin</Link>}
+              <Link to="/messages" style={linkStyle} onClick={() => setMenuOpen(false)}>Messages</Link>
+              {user.is_admin && (
+                <Link to="/admin" style={{ ...linkStyle, color: 'var(--accent)', display: 'flex', alignItems: 'center', gap: '0.4rem' }} onClick={() => setMenuOpen(false)}>
+                  Admin
+                  {reportCount > 0 && (
+                    <span style={{
+                      background: 'var(--danger)', color: '#fff', fontSize: '0.65rem',
+                      borderRadius: '10px', padding: '0.1rem 0.4rem', fontWeight: 700,
+                      minWidth: '18px', textAlign: 'center', lineHeight: '1.3',
+                    }}>{reportCount}</span>
+                  )}
+                </Link>
+              )}
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
