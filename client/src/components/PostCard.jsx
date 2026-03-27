@@ -55,9 +55,14 @@ function PostCard({ post }) {
             flexWrap: 'wrap',
             gap: '0.5rem',
           }}>
-            <div style={{ display: 'flex', gap: '0.4rem' }}>
+            <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
               <span className="badge">{post.grade}</span>
               <span className="badge">{post.class}</span>
+              {post.key_type && (
+                <span className="badge" style={{ background: 'rgba(0, 200, 150, 0.12)', color: '#00c896' }}>
+                  {post.key_type}
+                </span>
+              )}
             </div>
             <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>
               by {post.username}

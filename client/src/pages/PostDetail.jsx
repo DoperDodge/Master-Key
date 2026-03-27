@@ -143,6 +143,11 @@ function PostDetail({ user }) {
         }}>
           <span className="badge">{post.grade}</span>
           <span className="badge">{post.class}</span>
+          {post.key_type && (
+            <span className="badge" style={{ background: 'rgba(0, 200, 150, 0.12)', color: '#00c896' }}>
+              {post.key_type}
+            </span>
+          )}
           <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
             by <span style={{ color: 'var(--text-secondary)' }}>{post.username}</span>
           </span>

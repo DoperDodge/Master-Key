@@ -8,7 +8,13 @@ function AdminPanel({ user }) {
   const [editingPost, setEditingPost] = useState(null);
   const [editForm, setEditForm] = useState({});
 
-  const classes = ['Bible', 'Spanish', 'English', 'Geometry', 'Chemistry', 'Algebra 2', 'Algebra 1'];
+  const GRADE_CLASSES = {
+    '9th': ['Algebra'],
+    '10th': ['Bible', 'Spanish', 'English', 'Geometry', 'Chemistry', 'Algebra 2', 'Algebra 1'],
+    '11th': ['Algebra 2'],
+    '12th': [],
+  };
+  const BASE_KEY_TYPES = ['Homework', 'Classwork', 'Notes', 'Quiz', 'Test', 'Miscellaneous'];
 
   useEffect(() => {
     if (!user || !user.is_admin) return;
@@ -56,6 +62,7 @@ function AdminPanel({ user }) {
       grade: post.grade,
       class: post.class,
       visibility: post.visibility,
+      key_type: post.key_type || '',
     });
   };
 
@@ -125,7 +132,7 @@ function AdminPanel({ user }) {
                       <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 600 }}>{post.title}</h3>
                     )}
                     <p style={{ margin: '0.2rem 0 0', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
-                      by {post.username} | {post.grade} - {post.class} | {post.visibility}
+                      by {post.username} | {post.grade} - {post.class}{post.key_type ? ` - ${post.key_type}` : ''} | {post.visibility}
                     </p>
                   </div>
 
@@ -152,14 +159,28 @@ function AdminPanel({ user }) {
                     </div>
                     <div>
                       <label className="label">Grade</label>
-                      <select className="select" value={editForm.grade} onChange={e => setEditForm({ ...editForm, grade: e.target.value })}>
-                        <option value="10th">10th</option>
+                      <select className="select" value={editForm.grade} onChange={e => {
+                        const g = e.target.value;
+                        const classes = GRADE_CLASSES[g] || [];
+                        setEditForm({ ...editForm, grade: g, class: classes[0] || editForm.class });
+                      }}>
+                        {Object.keys(GRADE_CLASSES).map(g => <option key={g} value={g}>{g}</option>)}
                       </select>
                     </div>
                     <div>
                       <label className="label">Class</label>
-                      <select className="select" value={editForm.class} onChange={e => setEditForm({ ...editForm, class: e.target.value })}>
-                        {classes.map(c => <option key={c} value={c}>{c}</option>)}
+                      <select className="select" value={editForm.class} onChange={e => {
+                        const c = e.target.value;
+                        setEditForm({ ...editForm, class: c, key_type: editForm.key_type === 'Lab' && c !== 'Chemistry' ? '' : editForm.key_type });
+                      }}>
+                        {(GRADE_CLASSES[editForm.grade] || []).map(c => <option key={c} value={c}>{c}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="label">Type</label>
+                      <select className="select" value={editForm.key_type} onChange={e => setEditForm({ ...editForm, key_type: e.target.value })}>
+                        <option value="">None</option>
+                        {[...BASE_KEY_TYPES, ...(editForm.class === 'Chemistry' ? ['Lab'] : [])].map(t => <option key={t} value={t}>{t}</option>)}
                       </select>
                     </div>
                     <div>

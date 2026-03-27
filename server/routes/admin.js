@@ -40,16 +40,17 @@ router.delete('/posts/:id', requireAdmin, async (req, res) => {
 
 // Admin edit any post
 router.patch('/posts/:id', requireAdmin, async (req, res) => {
-  const { title, description, grade, class: className, visibility } = req.body;
+  const { title, description, grade, class: className, visibility, key_type } = req.body;
   const result = await db.query(
     `UPDATE posts SET
       title = COALESCE($1, title),
       description = COALESCE($2, description),
       grade = COALESCE($3, grade),
       class = COALESCE($4, class),
-      visibility = COALESCE($5, visibility)
-    WHERE id = $6 RETURNING *`,
-    [title, description, grade, className, visibility, req.params.id]
+      visibility = COALESCE($5, visibility),
+      key_type = COALESCE($6, key_type)
+    WHERE id = $7 RETURNING *`,
+    [title, description, grade, className, visibility, key_type, req.params.id]
   );
   if (!result.rows.length) return res.status(404).json({ error: 'Post not found' });
   res.json(result.rows[0]);
