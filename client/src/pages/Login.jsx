@@ -24,33 +24,28 @@ function Login({ setUser }) {
     navigate('/');
   };
 
-  const inputStyle = { width: '100%', padding: '0.5rem', marginBottom: '1rem', boxSizing: 'border-box' };
-
   return (
-    <div style={{ maxWidth: '400px', margin: '2rem auto' }}>
-      <h1>Login</h1>
-      <form onSubmit={handleSubmit}>
-        <label>Username</label>
-        <input type="text" value={username} onChange={e => setUsername(e.target.value)} required style={inputStyle} />
-        <label>Password</label>
-        <input type="password" value={password} onChange={e => setPassword(e.target.value)} required style={inputStyle} />
-        {error && <p style={{ color: 'red' }}>{error}</p>}
-        <button type="submit" style={{
-          padding: '0.75rem 2rem',
-          backgroundColor: '#3498db',
-          color: '#fff',
-          border: 'none',
-          borderRadius: '4px',
-          cursor: 'pointer',
-          width: '100%',
-          fontSize: '1rem'
-        }}>
-          Login
-        </button>
-      </form>
-      <p style={{ marginTop: '1rem', textAlign: 'center' }}>
-        Don't have an account? <Link to="/register">Register</Link>
-      </p>
+    <div style={{ maxWidth: '420px', margin: '3rem auto' }}>
+      <h1 className="page-title" style={{ textAlign: 'center' }}>Welcome Back</h1>
+      <div className="card" style={{ padding: '2rem' }}>
+        <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label className="label">Username</label>
+            <input className="input" type="text" value={username} onChange={e => setUsername(e.target.value)} required placeholder="Enter your username" />
+          </div>
+          <div className="form-group">
+            <label className="label">Password</label>
+            <input className="input" type="password" value={password} onChange={e => setPassword(e.target.value)} required placeholder="Enter your password" />
+          </div>
+          {error && <p className="error-msg">{error}</p>}
+          <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '0.85rem', marginTop: '0.5rem', fontSize: '1rem' }}>
+            Login
+          </button>
+        </form>
+        <p style={{ marginTop: '1.5rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+          Don't have an account? <Link to="/register">Sign up</Link>
+        </p>
+      </div>
     </div>
   );
 }

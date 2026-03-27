@@ -4,8 +4,13 @@ const session = require('express-session');
 const PgSession = require('connect-pg-simple')(session);
 const path = require('path');
 const db = require('./db');
+const bcrypt = require('bcrypt');
+const migrate = require('./migrate');
 
 const app = express();
+
+// Trust Railway's reverse proxy so secure cookies work
+app.set('trust proxy', 1);
 
 app.use(express.json());
 
@@ -23,10 +28,31 @@ app.use(session({
   }
 }));
 
+// Run migrations then seed admin account
+(async () => {
+  await migrate();
+  try {
+    const existing = await db.query('SELECT id FROM users WHERE username = $1', ['Admin']);
+    if (!existing.rows.length) {
+      const hash = await bcrypt.hash('Rocco3097', 10);
+      await db.query(
+        'INSERT INTO users (username, password_hash, is_admin) VALUES ($1, $2, true)',
+        ['Admin', hash]
+      );
+      console.log('Admin account created');
+    } else {
+      await db.query('UPDATE users SET is_admin = true WHERE username = $1', ['Admin']);
+    }
+  } catch (err) {
+    console.log('Admin seed note:', err.message);
+  }
+})();
+
 // API routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/posts', require('./routes/posts'));
 app.use('/api/comments', require('./routes/comments'));
+app.use('/api/admin', require('./routes/admin'));
 
 // Serve React frontend
 app.use(express.static(path.join(__dirname, '../client/dist')));
