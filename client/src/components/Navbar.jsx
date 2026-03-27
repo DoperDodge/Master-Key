@@ -65,8 +65,8 @@ function Navbar({ user, setUser }) {
     <nav style={navStyle}>
       <div style={innerStyle}>
         <Link to="/" style={logoStyle}>
-          <span style={{ fontSize: '1.4rem' }}>📸</span>
-          School Photos
+          <span style={{ fontSize: '1.4rem' }}>🔑</span>
+          Master Key
         </Link>
 
         <button
