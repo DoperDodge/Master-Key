@@ -11,7 +11,14 @@ function Upload({ user }) {
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  if (!user) return <p>Please log in to upload photos.</p>;
+  if (!user) {
+    return (
+      <div className="empty-state">
+        <p style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>🔒</p>
+        <p>Please log in to upload photos.</p>
+      </div>
+    );
+  }
 
   const classes = ['Bible', 'Spanish', 'English', 'Geometry', 'Chemistry', 'Algebra 2', 'Algebra 1'];
 
@@ -44,44 +51,84 @@ function Upload({ user }) {
     navigate('/dashboard');
   };
 
-  const inputStyle = { width: '100%', padding: '0.5rem', marginBottom: '1rem', boxSizing: 'border-box' };
-
   return (
-    <div style={{ maxWidth: '600px' }}>
-      <h1>Upload Photos</h1>
-      <form onSubmit={handleSubmit}>
-        <label>Title</label>
-        <input type="text" value={title} onChange={e => setTitle(e.target.value)} required style={inputStyle} />
+    <div style={{ maxWidth: '560px', margin: '0 auto' }}>
+      <h1 className="page-title">Upload Photos</h1>
+      <div className="card" style={{ padding: '2rem' }}>
+        <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label className="label">Title</label>
+            <input className="input" type="text" value={title} onChange={e => setTitle(e.target.value)} required placeholder="Give your post a title" />
+          </div>
 
-        <label>Description</label>
-        <textarea value={description} onChange={e => setDescription(e.target.value)} rows={3} style={inputStyle} />
+          <div className="form-group">
+            <label className="label">Description</label>
+            <textarea className="textarea" value={description} onChange={e => setDescription(e.target.value)} placeholder="Add a description (optional)" rows={3} />
+          </div>
 
-        <label>Grade</label>
-        <select value={grade} onChange={e => setGrade(e.target.value)} style={inputStyle}>
-          <option value="10th">10th</option>
-        </select>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div className="form-group">
+              <label className="label">Grade</label>
+              <select className="select" value={grade} onChange={e => setGrade(e.target.value)}>
+                <option value="10th">10th</option>
+              </select>
+            </div>
 
-        <label>Class</label>
-        <select value={className} onChange={e => setClassName(e.target.value)} style={inputStyle}>
-          {classes.map(c => <option key={c} value={c}>{c}</option>)}
-        </select>
+            <div className="form-group">
+              <label className="label">Class</label>
+              <select className="select" value={className} onChange={e => setClassName(e.target.value)}>
+                {classes.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+          </div>
 
-        <label>Images</label>
-        <input type="file" accept="image/*" multiple onChange={e => setFiles(e.target.files)} style={inputStyle} />
+          <div className="form-group">
+            <label className="label">Images</label>
+            <div style={{
+              border: '2px dashed var(--border)',
+              borderRadius: 'var(--radius-md)',
+              padding: '2rem',
+              textAlign: 'center',
+              cursor: 'pointer',
+              transition: 'all var(--transition)',
+              background: files && files.length > 0 ? 'var(--accent-subtle)' : 'transparent',
+              borderColor: files && files.length > 0 ? 'var(--accent)' : 'var(--border)',
+            }}
+            onClick={() => document.getElementById('file-input').click()}
+            >
+              <input
+                id="file-input"
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={e => setFiles(e.target.files)}
+                style={{ display: 'none' }}
+              />
+              {files && files.length > 0 ? (
+                <p style={{ color: 'var(--accent)', fontWeight: 500 }}>
+                  {files.length} image{files.length > 1 ? 's' : ''} selected
+                </p>
+              ) : (
+                <>
+                  <p style={{ color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Click to select images</p>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Up to 20 images, 10MB each</p>
+                </>
+              )}
+            </div>
+          </div>
 
-        {error && <p style={{ color: 'red' }}>{error}</p>}
-        <button type="submit" disabled={submitting} style={{
-          padding: '0.75rem 2rem',
-          backgroundColor: '#2ecc71',
-          color: '#fff',
-          border: 'none',
-          borderRadius: '4px',
-          cursor: 'pointer',
-          fontSize: '1rem'
-        }}>
-          {submitting ? 'Uploading...' : 'Upload'}
-        </button>
-      </form>
+          {error && <p className="error-msg">{error}</p>}
+
+          <button
+            type="submit"
+            disabled={submitting}
+            className="btn btn-success"
+            style={{ width: '100%', padding: '0.85rem', marginTop: '0.5rem', fontSize: '1rem' }}
+          >
+            {submitting ? 'Uploading...' : 'Upload Post'}
+          </button>
+        </form>
+      </div>
     </div>
   );
 }

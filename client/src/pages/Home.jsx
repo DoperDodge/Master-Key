@@ -20,16 +20,15 @@ function Home() {
 
   return (
     <div>
-      <h1>Browse Photos</h1>
+      <h1 className="page-title">Browse Photos</h1>
       <FilterBar grade={grade} setGrade={setGrade} className={className} setClassName={setClassName} />
       {posts.length === 0 ? (
-        <p style={{ color: '#888' }}>No posts found.</p>
+        <div className="empty-state">
+          <p style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>📷</p>
+          <p>No posts found. Try adjusting your filters or check back later!</p>
+        </div>
       ) : (
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-          gap: '1.5rem'
-        }}>
+        <div className="post-grid">
           {posts.map(post => <PostCard key={post.id} post={post} />)}
         </div>
       )}

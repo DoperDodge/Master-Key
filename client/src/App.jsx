@@ -22,12 +22,12 @@ function App() {
       .catch(() => setLoading(false));
   }, []);
 
-  if (loading) return <div style={{ padding: '2rem', textAlign: 'center' }}>Loading...</div>;
+  if (loading) return <div className="loading">Loading...</div>;
 
   return (
     <BrowserRouter>
       <Navbar user={user} setUser={setUser} />
-      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '1rem' }}>
+      <main className="container">
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/upload" element={<Upload user={user} />} />
@@ -36,7 +36,7 @@ function App() {
           <Route path="/dashboard" element={<Dashboard user={user} />} />
           <Route path="/post/:id" element={<PostDetail user={user} />} />
         </Routes>
-      </div>
+      </main>
     </BrowserRouter>
   );
 }
