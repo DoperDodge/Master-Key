@@ -185,4 +185,22 @@ router.get('/users/search', requireAuth, async (req, res) => {
   }
 });
 
+// Search shareable posts (public + unlisted)
+router.get('/posts/search', requireAuth, async (req, res) => {
+  try {
+    const q = req.query.q;
+    if (!q) return res.json([]);
+    const result = await db.query(`
+      SELECT p.id, p.title, p.grade, p.class, p.key_type, p.visibility, u.username,
+        (SELECT url FROM images i WHERE i.post_id = p.id ORDER BY i.position LIMIT 1) AS thumbnail
+      FROM posts p JOIN users u ON u.id = p.user_id
+      WHERE p.visibility IN ('public', 'unlisted') AND p.title ILIKE $1
+      ORDER BY p.created_at DESC LIMIT 10
+    `, [`%${q}%`]);
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;
